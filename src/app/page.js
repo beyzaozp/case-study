@@ -1,95 +1,202 @@
+"use client";
 import Image from "next/image";
 import styles from "./page.module.css";
+import {
+  Checkbox,
+  FormControlLabel,
+  Input,
+  List,
+  ListItem,
+  Stack,
+} from "@mui/material";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSearch } from "@fortawesome/free-solid-svg-icons";
+import { useEffect, useState } from "react";
 
 export default function Home() {
+  const [checkOneSide, setCheckOneSide] = useState(false);
+  const [flyList, setFlyList] = useState([]);
+  const [airportList, setAirportList] = useState([]);
+  const [searchTermKalkis, setSearchTermKalkis] = useState("");
+  const [searchTermVaris, setSearchTermVaris] = useState("");
+  const [selectedAirportGidis, setSelectedAirportGidis] = useState("");
+  const [selectedAirportDonus, setSelectedAirportDonus] = useState("");
+  const [filteredAirports, setFilteredAirports] = useState([]);
+  const [isDropdownOpenGidis, setIsDropdownOpenGidis] = useState(false);
+  const [isDropdownOpenDonus, setIsDropdownOpenDonus] = useState(false);
+
+  const handleCheckboxChange = () => {
+    setCheckOneSide(!checkOneSide);
+  };
+
+  const handleFetch = async () => {
+    try {
+      // Uçuş verilerini çekme
+      const flyResponse = await fetch(
+        "https://65ab9c6efcd1c9dcffc6a945.mockapi.io/flies"
+      );
+      const flyData = await flyResponse.json();
+      setFlyList(flyData);
+      console.log("Uçuş Verileri:", flyData);
+    } catch (flyError) {
+      console.error("Uçuş Verileri Çekme Hatası:", flyError);
+    }
+
+    try {
+      // Havaalanı verilerini çekme
+      const airportResponse = await fetch(
+        "https://65ab9c6efcd1c9dcffc6a945.mockapi.io/airport"
+      );
+      const airportData = await airportResponse.json();
+      setAirportList(airportData);
+      setFilteredAirports(airportData); // Başlangıçta tüm verileri göster
+      console.log("Havaalanı Verileri:", airportData);
+    } catch (airportError) {
+      console.error("Havaalanı Verileri Çekme Hatası:", airportError);
+    }
+  };
+
+  useEffect(() => {
+    handleFetch();
+  }, []);
+
+  useEffect(() => {
+    const filtered = airportList.filter(
+      (airport) =>
+        airport.name.toLowerCase().includes(searchTermKalkis.toLowerCase()) ||
+        airport.city.toLowerCase().includes(searchTermKalkis.toLowerCase()) ||
+        airport.code.toLowerCase().includes(searchTermKalkis.toLowerCase())
+    );
+    setFilteredAirports(filtered);
+  }, [searchTermKalkis, searchTermVaris, airportList]);
+
+  const handleAirportGidisClick = (selectedAirport) => {
+    setSelectedAirportGidis(selectedAirport);
+    closeDropdown();
+  };
+  const handleAirportClick = (selectedAirport) => {
+    setSelectedAirportDonus(selectedAirport);
+    closeDropdown();
+  };
+
+  const closeDropdown = () => {
+    setIsDropdownOpenDonus(false);
+    setIsDropdownOpenGidis(false);
+  };
+
+  console.log(selectedAirportDonus, selectedAirportGidis);
+
   return (
     <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.js</code>
+      <div className={styles.header}>
+        <p>Travel Agent</p>
+        <p className={styles.subTitle}>
+          Lütfen Kalkış ve Varış Havaalanını seçiniz.
         </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
+        <FormControlLabel
+          sx={{ color: "#FFFF", fontWeight: 600, fontSize: "1.5 rem" }}
+          control={
+            <Checkbox
+              defaultChecked
+              checked={checkOneSide}
+              onChange={handleCheckboxChange}
             />
-          </a>
+          }
+          label="Tek yönlü uçuş"
+        />
+      </div>
+      <div className={styles.description}>
+        <div className={styles.airportContainer}>
+          <p>Kalkış havaalanı</p>
+          <div className={styles.inputContainer}>
+            <input
+              className={styles.input}
+              type="text"
+              placeholder="Havaalanı ara..."
+              value={searchTermKalkis || selectedAirportGidis.name}
+              onFocus={() => setIsDropdownOpenGidis(true)}
+              onChange={(e) => setSearchTermKalkis(e.target.value)}
+            />
+            <FontAwesomeIcon icon={faSearch} className={styles.icon} />
+            {isDropdownOpenGidis && (
+              <List
+                p="5px 20px"
+                bgcolor="#ffff"
+                boxShadow=""
+                className={styles.dropdownList}
+              >
+                {filteredAirports.map((airport) => (
+                  <ListItem
+                    key={airport.code}
+                    className={styles.dropdownItem}
+                    onClick={() => handleAirportGidisClick(airport)}
+                  >
+                    {airport.name} - {airport.code}
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </div>
+        </div>
+        <div className={styles.airportContainer}>
+          <p>Varış Havaalanı</p>
+          <div className={styles.inputContainer}>
+            <input
+              className={styles.input}
+              type="text"
+              placeholder="Havaalanı ara..."
+              value={searchTermVaris || selectedAirportDonus.name}
+              onFocus={() => setIsDropdownOpenDonus(true)}
+              onChange={(e) => setSearchTermVaris(e.target.value)}
+            />
+            <FontAwesomeIcon icon={faSearch} className={styles.icon} />
+            {isDropdownOpenDonus && (
+              <ul className={styles.dropdownList}>
+                {filteredAirports.map((airport) => (
+                  <Stack
+                    key={airport.id}
+                    p="5px 20px"
+                    bgcolor="#ffff"
+                    boxShadow=""
+                  >
+                    <li
+                      className={styles.dropdownItem}
+                      onClick={() => handleAirportClick(airport)}
+                    >
+                      {airport.name} - {airport.code}
+                    </li>
+                  </Stack>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+        <div className={styles.airportContainer}>
+          <p>Gidiş Tarihi</p>
+          <div className={styles.inputContainer}>
+            <input
+              className={styles.dateInput}
+              type="date"
+              placeholder="Gidiş Tarihi"
+            />
+          </div>
+        </div>
+        <div className={styles.airportContainer}>
+          <p>Dönüş Tarihi</p>
+          <div className={styles.inputContainer}>
+            <input
+              className={styles.dateInput}
+              disabled={checkOneSide}
+              type="date"
+              placeholder="Dönüş Tarihi"
+            />
+          </div>
         </div>
       </div>
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+      <div className={styles.center}></div>
 
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+      <div className={styles.grid}></div>
     </main>
   );
 }
